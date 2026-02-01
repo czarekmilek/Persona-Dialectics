@@ -1,9 +1,44 @@
 import os
+import re
 from datetime import datetime
 
-from config import PERSONAS, JUDGE_SYSTEM_PROMPT, TEST_DILEMMAS
+from config import (
+    PERSONAS,
+    JUDGE_SYSTEM_PROMPT,
+    SYNTHESIZER_SYSTEM_PROMPT,
+    TEST_DILEMMAS,
+)
 from model_engine import load_model, generate_response
-from analysis import analyze_persona_response, print_analysis_summary
+from analysis import (
+    analyze_persona_response,
+    print_analysis_summary,
+    print_llm_affiliation_summary,
+)
+
+
+def parse_judge_ratings(verdict_text):
+    """
+    Parse affiliation ratings from Judge's structured output.
+
+    Expected format:
+    RATINGS:
+    - Utilitarian: X/10
+    - Empath: X/10
+    ...
+
+    Returns:
+        dict: {"Utilitarian": X, "Empath": X, ...} or empty dict if parsing fails
+    """
+    ratings = {}
+
+    # looking for pattern: "PersonaName: X/10" or "PersonaName: X / 10"
+    pattern = r"-\s*(\w+):\s*(\d+)\s*/\s*10"
+    matches = re.findall(pattern, verdict_text)
+
+    for persona_name, score in matches:
+        ratings[persona_name] = int(score)
+
+    return ratings
 
 
 def print_header(text):
@@ -64,30 +99,75 @@ def run_pipeline():
             print(f"Keywords found: {', '.join(analysis['keywords_found'][:5])}")
 
         # ---------------------------------------------------------------------
-        # STEP 2b: Judge evaluates all opinions
+        # STEP 2b: Synthesizer creates hybrid solution from all opinions
+        # ---------------------------------------------------------------------
+        print_subheader("Persona: Synthesizer")
+
+        # building prompt with all perssona opinions
+        synth_opinions_text = "\n\n".join(
+            [f"{name}: {opinions[name]}" for name in PERSONAS.keys()]
+        )
+
+        synth_prompt = f"""Dilemma: {dilemma["description"]}
+
+Here are the perspectives from different personas:
+
+{synth_opinions_text}
+
+Create a HYBRID solution that combines the best elements. Be decisive."""
+
+        synth_response = generate_response(
+            model, tokenizer, SYNTHESIZER_SYSTEM_PROMPT, synth_prompt
+        )
+
+        opinions["Synthesizer"] = synth_response
+
+        print(f"\nSynthesizer's Opinion:")
+        print("-" * 40)
+        print(
+            synth_response[:500] + "..."
+            if len(synth_response) > 500
+            else synth_response
+        )
+
+        # analyzing Synthesizer affiliation
+        analysis = analyze_persona_response("Synthesizer", synth_response)
+        print(f"\nControllability Score: {analysis['score']:.2f}/1.00")
+        print(f"Keywords found: {', '.join(analysis['keywords_found'][:5])}")
+
+        # ---------------------------------------------------------------------
+        # STEP 2c: Judge evaluates all opinions
         # ---------------------------------------------------------------------
         print_subheader("JUDGE'S EVALUATION")
 
-        # build the judge's prompt with all opinions
+        # build the judge's prompt with all opinions dynamically
+        opinions_text = "\n\n".join(
+            [f"{name.upper()}: {opinions[name]}" for name in opinions.keys()]
+        )
+
         judge_prompt = f"""Dilemma: {dilemma["description"]}
 
-UTILITARIAN: {opinions["Utilitarian"]}
+{opinions_text}
 
-EMPATH: {opinions["Empath"]}
-
-EGOIST: {opinions["Egoist"]}
-
-Who wins and why? Be brief."""
+Rate each persona's affiliation to their role (1-10) and declare the winner."""
 
         judge_verdict = generate_response(
             model, tokenizer, JUDGE_SYSTEM_PROMPT, judge_prompt
         )
+
+        # get affiliation ratings from the verdict
+        llm_ratings = parse_judge_ratings(judge_verdict)
 
         print("\nJudge's Verdict:")
         print("-" * 40)
         print(
             judge_verdict[:800] + "..." if len(judge_verdict) > 800 else judge_verdict
         )
+
+        if llm_ratings:
+            print("\nLLM Affiliation Ratings:")
+            for persona, rating in llm_ratings.items():
+                print(f"  {persona}: {rating}/10")
 
         # store result
         all_results.append(
@@ -96,6 +176,7 @@ Who wins and why? Be brief."""
                 "dilemma_title": dilemma["title"],
                 "opinions": opinions,
                 "judge_verdict": judge_verdict,
+                "llm_ratings": llm_ratings,
             }
         )
 
@@ -104,10 +185,15 @@ Who wins and why? Be brief."""
     # =========================================================================
     print_header("FINAL SUMMARY")
     print(f"\nProcessed {len(TEST_DILEMMAS)} dilemmas")
-    print(f"Used {len(PERSONAS)} personas: {', '.join(PERSONAS.keys())}")
+    print(
+        f"Used {len(PERSONAS)} personas + Synthesizer: {', '.join(PERSONAS.keys())}, Synthesizer"
+    )
 
     # print controllability analysis for all responses
     print_analysis_summary(all_results)
+
+    # print LLM affiliation analysis
+    print_llm_affiliation_summary(all_results)
 
     # save results to file
     save_results(all_results)

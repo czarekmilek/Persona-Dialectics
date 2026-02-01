@@ -110,6 +110,24 @@ PERSONA_KEYWORDS = {
         "fallacy",
         "hidden",
     ],
+    "Synthesizer": [
+        "combine",
+        "integrate",
+        "balance",
+        "synthesize",
+        "hybrid",
+        "elements",
+        "perspectives",
+        "unified",
+        "blend",
+        "merge",
+        "both",
+        "together",
+        "approach",
+        "solution",
+        "best",
+        "strengths",
+    ],
 }
 
 # words specific personas should AVOID (using them reduces score)
@@ -171,6 +189,16 @@ PERSONA_FORBIDDEN = {
         "undoubtedly",
         "obviously",
         "clearly",
+    ],
+    "Synthesizer": [
+        "only",
+        "solely",
+        "pure",
+        "ignore",
+        "reject",
+        "dismiss",
+        "wrong",
+        "exclusively",
     ],
 }
 
@@ -254,6 +282,40 @@ def print_analysis_summary(all_results):
             avg_score = sum(scores) / len(scores)
             bar = "#" * int(avg_score * 20) + " " * (20 - int(avg_score * 20))
             print(f"{persona_name:12} [{bar}] {avg_score:.2%}")
+
+
+def print_llm_affiliation_summary(all_results):
+    """
+    Prints a summary of LLM-rated affiliation scores for all personas.
+
+    Args:
+        all_results: List of result dictionaries from main pipeline
+    """
+    print("\n" + "=" * 60)
+    print("  LLM AFFILIATION RATINGS (Judge-Rated)")
+    print("=" * 60)
+
+    persona_scores = {}
+
+    for result in all_results:
+        llm_ratings = result.get("llm_ratings", {})
+        for persona_name, rating in llm_ratings.items():
+            if persona_name not in persona_scores:
+                persona_scores[persona_name] = []
+            persona_scores[persona_name].append(rating)
+
+    if not persona_scores:
+        print("\nNo LLM ratings found.")
+        return
+
+    print("\nAverage LLM Affiliation Scores (out of 10):")
+    print("-" * 40)
+
+    for persona_name, scores in persona_scores.items():
+        if scores:
+            avg_score = sum(scores) / len(scores)
+            bar = "#" * int(avg_score * 2) + " " * (20 - int(avg_score * 2))
+            print(f"{persona_name:14} [{bar}] {avg_score:.1f}/10")
 
 
 if __name__ == "__main__":

@@ -63,11 +63,26 @@ Use words: however, but, assume, question, flaw, alternative, overlooked.""",
 # JUDGE DEFINITION
 # =============================================================================
 
-JUDGE_SYSTEM_PROMPT = """You are an impartial Judge. Be concise.
-1. Name the winner (Utilitarian, Empath, Egoist, Futurist, Hero, or DevilsAdvocate)
-2. Give ONE sentence explaining why their argument was strongest. Verify their logic is consistent!
-3. Give ONE sentence noting what the other perspectives missed.
-NOTE: Penalize arguments that contain logical contradictions."""
+SYNTHESIZER_SYSTEM_PROMPT = """You are the Synthesizer. Read all persona arguments and create a HYBRID solution.
+Combine the strongest elements from multiple perspectives into ONE unified decision.
+Answer in 2-3 sentences MAX. Be decisive.
+Use words: combine, integrate, balance, synthesize, hybrid, elements, perspectives."""
+
+JUDGE_SYSTEM_PROMPT = """You are an impartial Judge. For each persona, rate their AFFILIATION to their assigned role (1-10).
+Then declare the winner based on argument strength.
+
+Format your response EXACTLY like this:
+RATINGS:
+- Utilitarian: X/10
+- Empath: X/10
+- Egoist: X/10
+- Futurist: X/10
+- Hero: X/10
+- DevilsAdvocate: X/10
+- Synthesizer: X/10
+
+WINNER: [persona name]
+REASON: [one sentence explaining why their argument was strongest]"""
 
 # =============================================================================
 # TEST DILEMMAS
