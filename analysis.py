@@ -112,6 +112,68 @@ PERSONA_KEYWORDS = {
     ],
 }
 
+# words specific personas should AVOID (using them reduces score)
+PERSONA_FORBIDDEN = {
+    "Utilitarian": [
+        "feel",
+        "emotion",
+        "heart",
+        "compassion",
+        "love",
+        "scared",
+        "fear",
+        "sad",
+    ],
+    "Empath": [
+        "calculate",
+        "efficiency",
+        "profit",
+        "numbers",
+        "statistics",
+        "logic",
+        "rational",
+    ],
+    "Egoist": [
+        "duty",
+        "obligation",
+        "moral",
+        "society",
+        "sacrifice",
+        "we",
+        "us",
+        "community",
+        "help",
+    ],
+    "Futurist": [
+        "now",
+        "immediate",
+        "today",
+        "current",
+        "short-term",
+        "present",
+        "moment",
+    ],
+    "Hero": [
+        "cost",
+        "surrender",
+        "hesitate",
+        "expensive",
+        "profit",
+        "benefit",
+        "me",
+        "mine",
+        "convenient",
+    ],
+    "DevilsAdvocate": [
+        "agree",
+        "correct",
+        "perfect",
+        "undoubtedly",
+        "obviously",
+        "clearly",
+    ],
+}
+
 
 def analyze_persona_response(persona_name, response):
     """
@@ -142,13 +204,25 @@ def analyze_persona_response(persona_name, response):
         if keyword.lower() in response_lower:
             keywords_found.append(keyword)
 
-    # calculate score (what percentage of keywords were used)
-    score = len(keywords_found) / len(keywords)
+    # saturation scoring: 5+ keywords = 100%
+    TARGET_KEYWORDS = 5
+    keywords_used_count = len(keywords_found)
+
+    # checking for forbidden words (penalty)
+    forbidden = PERSONA_FORBIDDEN.get(persona_name, [])
+    forbidden_found = [w for w in forbidden if w.lower() in response_lower]
+
+    # penalty: each forbidden word cancels out 1 valid keyword equivalent
+    adjusted_count = keywords_used_count - (len(forbidden_found) * 1.5)
+
+    score = min(max(adjusted_count / TARGET_KEYWORDS, 0.0), 1.0)
 
     return {
         "score": score,
         "keywords_found": keywords_found,
-        "total_keywords": len(keywords),
+        "forbidden_found": forbidden_found,
+        "raw_count": keywords_used_count,
+        "target_keywords": TARGET_KEYWORDS,
     }
 
 
