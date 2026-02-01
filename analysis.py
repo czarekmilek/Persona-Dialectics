@@ -41,6 +41,8 @@ PERSONA_KEYWORDS = {
     "Egoist": [
         "self",
         "myself",
+        "me",
+        "mine",
         "benefit",
         "advantage",
         "gain",
@@ -55,6 +57,8 @@ PERSONA_KEYWORDS = {
         "priority",
         "choice",
         "freedom",
+        "security",
+        "survival",
     ],
     "Futurist": [
         "future",
@@ -99,7 +103,7 @@ PERSONA_KEYWORDS = {
         "question",
         "flaw",
         "alternative",
-        "overlooked",
+        "overlook",
         "challenge",
         "doubt",
         "loophole",
@@ -109,6 +113,10 @@ PERSONA_KEYWORDS = {
         "premise",
         "fallacy",
         "hidden",
+        "simplistic",
+        "maybe",
+        "perhaps",
+        "complex",
     ],
     "Synthesizer": [
         "combine",
@@ -127,6 +135,9 @@ PERSONA_KEYWORDS = {
         "solution",
         "best",
         "strengths",
+        "advise",
+        "recommend",
+        "optimal",
     ],
 }
 

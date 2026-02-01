@@ -121,9 +121,7 @@ Create a HYBRID solution that combines the best elements. Be decisive."""
             model, tokenizer, SYNTHESIZER_SYSTEM_PROMPT, synth_prompt
         )
 
-        opinions["Synthesizer"] = synth_response
-
-        print(f"\nSynthesizer's Opinion:")
+        print("\nSynthesizer's Opinion:")
         print("-" * 40)
         print(
             synth_response[:500] + "..."
@@ -142,6 +140,7 @@ Create a HYBRID solution that combines the best elements. Be decisive."""
         print_subheader("JUDGE'S EVALUATION")
 
         # build the judge's prompt with all opinions dynamically
+        # Synthesizer is NOT in opinions dict yet, so it won't be listed as a candidate
         opinions_text = "\n\n".join(
             [f"{name.upper()}: {opinions[name]}" for name in opinions.keys()]
         )
@@ -150,11 +149,20 @@ Create a HYBRID solution that combines the best elements. Be decisive."""
 
 {opinions_text}
 
-Rate each persona's affiliation to their role (1-10) and declare the winner."""
+ADVISOR (SYNTHESIZER) RECOMMENDATION:
+{synth_response}
+
+Rate each persona's affiliation to their role (1-10) and declare the winner.
+REMEMBER: The Synthesizer is your advisor, NOT a contestant."""
 
         judge_verdict = generate_response(
             model, tokenizer, JUDGE_SYSTEM_PROMPT, judge_prompt
         )
+
+        # now adding synthesizer to opinions so it gets saved in results
+        opinions["Synthesizer"] = synth_response
+
+        # judge_verdict already generated above
 
         # get affiliation ratings from the verdict
         llm_ratings = parse_judge_ratings(judge_verdict)
