@@ -14,6 +14,7 @@ from analysis import (
     print_analysis_summary,
     print_llm_affiliation_summary,
 )
+from visualization import generate_visual_report
 
 
 def parse_judge_ratings(verdict_text):
@@ -195,19 +196,36 @@ Rate each persona's affiliation to their role (1-10) and declare the winner."""
     # print LLM affiliation analysis
     print_llm_affiliation_summary(all_results)
 
-    # save results to file
-    save_results(all_results)
+    # generate visual report (charts) and get output directory
+    output_dir = generate_visual_report(all_results)
+
+    # save text results to the same folder
+    save_results(all_results, output_dir)
 
     print(f"\nCompleted at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     print_header("DONE")
 
 
-def save_results(results):
-    os.makedirs("results", exist_ok=True)
+def save_results(results, output_dir=None):
+    """Save text results to file.
 
-    filename = f"results/results_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
+    Args:
+        results: List of result dicts from pipeline
+        output_dir: Directory to save to. If None, creates a new timestamped dir.
+    """
+    if output_dir is None:
+        os.makedirs("results", exist_ok=True)
+        output_dir = "results"
+        filename = os.path.join(
+            output_dir, f"results_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
+        )
+    else:
+        filename = os.path.join(output_dir, "report.txt")
 
     with open(filename, "w", encoding="utf-8") as f:
+        f.write("=" * 60 + "\n")
+        f.write("  RESULTS REPORT\n")
+        f.write(f"  Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
         f.write("=" * 60 + "\n\n")
 
         for result in results:
@@ -218,6 +236,13 @@ def save_results(results):
                 f.write(f"{persona}:\n{opinion}\n\n")
 
             f.write(f"JUDGE'S VERDICT:\n{result['judge_verdict']}\n\n")
+
+            if result.get("llm_ratings"):
+                f.write("LLM AFFILIATION RATINGS:\n")
+                for persona, rating in result["llm_ratings"].items():
+                    f.write(f"  - {persona}: {rating}/10\n")
+                f.write("\n")
+
             f.write("=" * 60 + "\n\n")
 
     print(f"\nResults saved to: {filename}")
