@@ -161,10 +161,10 @@ def plot_controllability_heatmap(all_results, output_dir):
         data.append(row)
 
     df = pd.DataFrame(data, index=dilemma_labels)
-    fig, ax = plt.subplots(figsize=(32, max(4, len(all_results) * 0.8)))
+    fig, ax = plt.subplots(figsize=(18, max(4, len(all_results) * 0.8)))
 
     sns.heatmap(
-        df.T,
+        df,
         annot=True,
         fmt=".2f",
         cmap="RdYlGn",

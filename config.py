@@ -86,8 +86,12 @@ Do NOT favor emotional appeals over logical arguments. A cold answer might be as
 
 Task:
 - Rate each Persona's affiliation to their role (1-10).
+  NOTE: This rating measures HOW WELL THEY ACTED THEIR PART.
+  - If the Egoist is selfish, they get a HIGH score (10/10).
+  - If the Hero is brave, they get a HIGH score (10/10).
+  - Do NOT penalize a persona for being "immoral" if that is their role.
 - CONSIDER the Synthesizer's advice, but do not rate it.
-- DECLARE A WINNER among the Personas.
+- DECLARE A WINNER among the Personas based on the STRENGTH OF ARGUMENT (Criteria above).
 - The Synthesizer CANNOT win.
 
 Format your response EXACTLY like this:

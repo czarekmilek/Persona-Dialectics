@@ -1,3 +1,5 @@
+from textblob import TextBlob
+
 # keywords each persona should use
 # helps measure "controllability" - did the model actually act like the persona?
 PERSONA_KEYWORDS = {
@@ -281,6 +283,14 @@ def analyze_persona_response(persona_name, response):
     }
 
 
+def analyze_sentiment(response):
+    blob = TextBlob(response)
+    return {
+        "polarity": blob.sentiment.polarity,
+        "subjectivity": blob.sentiment.subjectivity,
+    }
+
+
 def print_analysis_summary(all_results):
     """
     Prints a summary of controllability scores for all responses.
@@ -345,7 +355,57 @@ def print_llm_affiliation_summary(all_results):
             print(f"{persona_name:14} [{bar}] {avg_score:.1f}/10")
 
 
+def print_sentiment_summary(all_results):
+    """
+    Prints a summary of sentiment analysis (polarity and subjectivity) for all personas.
+
+    Args:
+        all_results: List of result dictionaries from main pipeline
+    """
+    print("\n" + "=" * 60)
+    print("  SENTIMENT ANALYSIS (TextBlob)")
+    print("=" * 60)
+
+    persona_polarity = {}
+    persona_subjectivity = {}
+
+    for result in all_results:
+        for persona_name, opinion in result["opinions"].items():
+            sentiment = analyze_sentiment(opinion)
+            if persona_name not in persona_polarity:
+                persona_polarity[persona_name] = []
+                persona_subjectivity[persona_name] = []
+            persona_polarity[persona_name].append(sentiment["polarity"])
+            persona_subjectivity[persona_name].append(sentiment["subjectivity"])
+
+    print("\nAverage polarity (-1=negative, +1=positive):")
+    print("-" * 40)
+
+    for persona_name in persona_polarity.keys():
+        avg_polarity = sum(persona_polarity[persona_name]) / len(
+            persona_polarity[persona_name]
+        )
+        # bar from -1 to +1, mapped to 0-20
+        bar_pos = int((avg_polarity + 1) * 10)
+        bar = " " * bar_pos + "|" + " " * (20 - bar_pos)
+        print(f"{persona_name:14} [{bar}] {avg_polarity:+.2f}")
+
+    print("\nAverage subjectivity (0=objective, 1=subjective):")
+    print("-" * 40)
+
+    for persona_name in persona_subjectivity.keys():
+        avg_subjectivity = sum(persona_subjectivity[persona_name]) / len(
+            persona_subjectivity[persona_name]
+        )
+        bar = "#" * int(avg_subjectivity * 20) + " " * (20 - int(avg_subjectivity * 20))
+        print(f"{persona_name:14} [{bar}] {avg_subjectivity:.2f}")
+
+
 if __name__ == "__main__":
     test_response = "I believe we should maximize the outcome and calculate the greatest benefit for all."
     result = analyze_persona_response("Utilitarian", test_response)
     print(f"Test analysis: {result}")
+
+    # test sentiment analysis
+    sentiment = analyze_sentiment(test_response)
+    print(f"Test sentiment: {sentiment}")

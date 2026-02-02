@@ -14,8 +14,10 @@ from dilemma_loader import get_all_dilemmas
 from model_engine import load_model, generate_response
 from analysis import (
     analyze_persona_response,
+    analyze_sentiment,
     print_analysis_summary,
     print_llm_affiliation_summary,
+    print_sentiment_summary,
 )
 from visualization import generate_visual_report
 
@@ -214,13 +216,10 @@ REMEMBER: The Synthesizer is your advisor, NOT a contestant."""
         f"Used {len(PERSONAS)} personas + Synthesizer: {', '.join(PERSONAS.keys())}, Synthesizer"
     )
 
-    # print controllability analysis for all responses
     print_analysis_summary(all_results)
-
-    # print LLM affiliation analysis
     print_llm_affiliation_summary(all_results)
+    print_sentiment_summary(all_results)
 
-    # generate visual report (charts) and get output directory
     output_dir = generate_visual_report(all_results)
 
     # save text results to the same folder
@@ -319,6 +318,42 @@ def save_results(results, output_dir=None):
                     f.write(f"{persona_name:14} [{bar}] {avg_score:.1f}/10\n")
         else:
             f.write("No LLM ratings found.\n")
+
+        # =====================================================================
+        # SENTIMENT ANALYSIS SECTION
+        # =====================================================================
+        f.write("\nSENTIMENT ANALYSIS (TextBlob):\n")
+        f.write("-" * 40 + "\n")
+
+        persona_polarity = {}
+        persona_subjectivity = {}
+        for result in results:
+            for persona_name, opinion in result["opinions"].items():
+                sentiment = analyze_sentiment(opinion)
+                if persona_name not in persona_polarity:
+                    persona_polarity[persona_name] = []
+                    persona_subjectivity[persona_name] = []
+                persona_polarity[persona_name].append(sentiment["polarity"])
+                persona_subjectivity[persona_name].append(sentiment["subjectivity"])
+
+        f.write("\nAverage polarity (-1=negative, +1=positive):\n")
+        for persona_name in persona_polarity.keys():
+            avg_polarity = sum(persona_polarity[persona_name]) / len(
+                persona_polarity[persona_name]
+            )
+            bar_pos = int((avg_polarity + 1) * 10)
+            bar = " " * bar_pos + "|" + " " * (20 - bar_pos)
+            f.write(f"{persona_name:14} [{bar}] {avg_polarity:+.2f}\n")
+
+        f.write("\nAverage subjectivity (0=objective, 1=subjective):\n")
+        for persona_name in persona_subjectivity.keys():
+            avg_subjectivity = sum(persona_subjectivity[persona_name]) / len(
+                persona_subjectivity[persona_name]
+            )
+            bar = "#" * int(avg_subjectivity * 20) + " " * (
+                20 - int(avg_subjectivity * 20)
+            )
+            f.write(f"{persona_name:14} [{bar}] {avg_subjectivity:.2f}\n")
 
         f.write("\n" + "=" * 60 + "\n")
 
