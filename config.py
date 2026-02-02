@@ -2,8 +2,29 @@
 # MODEL SETTINGS
 # =============================================================================
 
-# model we're using (abliterated = no safety refusals)
-MODEL_ID = "huihui-ai/Llama-3.2-3B-Instruct-abliterated"
+# models (abliterated = no safety refusals)
+# keys are used for folder naming and selection
+AVAILABLE_MODELS = {
+    "3B": {
+        "id": "huihui-ai/Llama-3.2-3B-Instruct-abliterated",
+        "name": "Llama-3.2-3B",
+        "description": "Main model - best quality, slower",
+    },
+    "1B": {
+        "id": "huihui-ai/Llama-3.2-1B-Instruct-abliterated",
+        "name": "Llama-3.2-1B",
+        "description": "Medium model - balanced speed/quality",
+    },
+    "0.5B": {
+        "id": "huihui-ai/Qwen2.5-0.5B-Instruct-abliterated-v3",
+        "name": "Qwen2.5-0.5B",
+        "description": "Smallest model - fastest, lower quality",
+    },
+}
+
+# Options: "3B", "1B", "0.5B"
+# None or empty list runs all models
+ACTIVE_MODELS = ["3B", "1B", "0.5B"]
 
 MODEL_CACHE_DIR = "./model_cache"
 
@@ -132,7 +153,7 @@ TEST_DILEMMAS = [
 # DYNAMIC DILEMMA LOADING (Social Chemistry 101)
 # =============================================================================
 
-NUM_ADDITIONAL_DILEMMAS = 3
+NUM_ADDITIONAL_DILEMMAS = 21
 
 DILEMMA_SEED = None
 

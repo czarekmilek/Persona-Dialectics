@@ -1,14 +1,15 @@
+import gc
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
-from config import MODEL_ID, MODEL_CACHE_DIR, MAX_NEW_TOKENS, TEMPERATURE, DO_SAMPLE
+from config import MODEL_CACHE_DIR, MAX_NEW_TOKENS, TEMPERATURE, DO_SAMPLE
 
 
-def load_model():
-    print(f"Loading model: {MODEL_ID}")
+def load_model(model_id: str):
+    print(f"Loading model: {model_id}")
     print(f"Cache directory: {MODEL_CACHE_DIR}")
 
     tokenizer = AutoTokenizer.from_pretrained(
-        MODEL_ID, cache_dir=MODEL_CACHE_DIR, trust_remote_code=True
+        model_id, cache_dir=MODEL_CACHE_DIR, trust_remote_code=True
     )
 
     # set padding token if not set (needed for batching)
@@ -17,7 +18,7 @@ def load_model():
 
     # load model (the actual neural network)
     model = AutoModelForCausalLM.from_pretrained(
-        MODEL_ID,
+        model_id,
         cache_dir=MODEL_CACHE_DIR,
         torch_dtype=torch.float16,  # use half precision for less VRAM
         device_map="cuda",
@@ -26,6 +27,27 @@ def load_model():
 
     print("Model loaded successfully!")
     return model, tokenizer
+
+
+def unload_model(model, tokenizer):
+    """
+    Unload model from GPU memory to free VRAM for the next model.
+    """
+    print("Unloading model from GPU...")
+
+    # delete model and tokenizer references
+    del model
+    del tokenizer
+
+    # clear CUDA cache
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
+        torch.cuda.synchronize()
+
+    # force garbage collection
+    gc.collect()
+
+    print("GPU memory cleared.")
 
 
 def generate_response(model, tokenizer, system_prompt, user_message):

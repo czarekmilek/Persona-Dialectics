@@ -338,24 +338,31 @@ def plot_response_lengths(all_results, output_dir):
     print(f"  [+] Saved: {filepath}")
 
 
-def generate_visual_report(all_results, base_output_dir="results"):
+def generate_visual_report(all_results, base_output_dir="results", model_key=None):
     """
     Generates all visualizations.
 
     Args:
         all_results: List of result dicts from the pipeline
         base_output_dir: Base directory for output (default: `results`)
+        model_key: Optional model identifier (e.g., "3B") for folder naming
 
     Returns:
         str: Path to the output directory containing all files
     """
-    # create timestamped output directory
+    # create timestamped output directory with optional model key
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    output_dir = os.path.join(base_output_dir, f"run_{timestamp}")
+    if model_key:
+        folder_name = f"run_{model_key}_{timestamp}"
+    else:
+        folder_name = f"run_{timestamp}"
+
+    output_dir = os.path.join(base_output_dir, folder_name)
     os.makedirs(output_dir, exist_ok=True)
 
+    model_info = f"(Model: {model_key})" if model_key else ""
     print("\n" + "=" * 60)
-    print("  GENERATING VISUAL REPORT")
+    print(f"  GENERATING VISUAL REPORT {model_info}")
     print("=" * 60)
     print(f"\nOutput directory: {output_dir}\n")
 
