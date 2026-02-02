@@ -7,7 +7,10 @@ from config import (
     JUDGE_SYSTEM_PROMPT,
     SYNTHESIZER_SYSTEM_PROMPT,
     TEST_DILEMMAS,
+    NUM_ADDITIONAL_DILEMMAS,
+    DILEMMA_SEED,
 )
+from dilemma_loader import get_all_dilemmas
 from model_engine import load_model, generate_response
 from analysis import (
     analyze_persona_response,
@@ -65,9 +68,21 @@ def run_pipeline():
     all_results = []
 
     # =========================================================================
+    # STEP 1.5: Load dilemmas (base + dynamic from Social Chemistry 101)
+    # =========================================================================
+    dilemmas = get_all_dilemmas(
+        base_dilemmas=TEST_DILEMMAS,
+        num_additional=NUM_ADDITIONAL_DILEMMAS,
+        seed=DILEMMA_SEED,
+    )
+    print(
+        f"\nLoaded {len(dilemmas)} dilemmas ({len(TEST_DILEMMAS)} base + {len(dilemmas) - len(TEST_DILEMMAS)} from Social Chemistry 101)"
+    )
+
+    # =========================================================================
     # STEP 2: Process each dilemma
     # =========================================================================
-    for dilemma in TEST_DILEMMAS:
+    for dilemma in dilemmas:
         print_header(f"DILEMMA {dilemma['id']}: {dilemma['title']}")
         print(f"\n{dilemma['description']}")
 

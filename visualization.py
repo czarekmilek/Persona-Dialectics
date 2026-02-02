@@ -9,34 +9,77 @@ import pandas as pd
 from analysis import analyze_persona_response
 
 
+# name normalization
+CANONICAL_NAMES = {
+    "utilitarian": "Utilitarian",
+    "empath": "Empath",
+    "egoist": "Egoist",
+    "futurist": "Futurist",
+    "hero": "Hero",
+    "devilsadvocate": "DevilsAdvocate",
+    "devils": "DevilsAdvocate",
+    "devil": "DevilsAdvocate",
+    "advocate": "DevilsAdvocate",
+}
+
+EXCLUDED_WINNERS = {"synthesizer", "adviser", "advisor", "judge"}
+
+
+def normalize_winner_name(raw_name):
+    if not raw_name:
+        return "Unknown"
+
+    # cleanup: no apostrophes, spaces, convert to lowercase
+    cleaned = raw_name.lower().replace("'", "").replace(" ", "").replace("-", "")
+
+    for excluded in EXCLUDED_WINNERS:
+        if excluded in cleaned:
+            return "Unknown"
+    if cleaned in CANONICAL_NAMES:
+        return CANONICAL_NAMES[cleaned]
+
+    # partial matching for multi-word names ("Devil's Advocate")
+    for key, canonical in CANONICAL_NAMES.items():
+        if key in cleaned or cleaned in key:
+            return canonical
+
+    # fallback to title case of the raw name
+    return raw_name.title()
+
+
 def extract_winner(verdict_text):
     """
     Extract winner persona name from Judge's verdict.
 
     Looks for patterns like:
     - "WINNER: Utilitarian"
+    - "WINNER: Devil's Advocate"
     - "**Winner: Empath**"
     - "The Utilitarian wins"
     """
-    # WINNER: XXXXXX
-    match = re.search(r"WINNER:\s*(\w+)", verdict_text, re.IGNORECASE)
+    # WINNER: XXXXXX (capturing everything until newline or REASON)
+    match = re.search(
+        r"WINNER:\s*([A-Za-z'\s]+?)(?:\n|REASON|$)", verdict_text, re.IGNORECASE
+    )
     if match:
-        return match.group(1)
+        return normalize_winner_name(match.group(1).strip())
 
     # **Winner: XXXXXX**
-    match = re.search(r"\*\*Winner:\s*(\w+)\*\*", verdict_text, re.IGNORECASE)
+    match = re.search(r"\*\*Winner:\s*([A-Za-z'\s]+?)\*\*", verdict_text, re.IGNORECASE)
     if match:
-        return match.group(1)
+        return normalize_winner_name(match.group(1).strip())
 
     # The XXXXXX wins
-    match = re.search(r"The\s+(\w+)\s+wins", verdict_text, re.IGNORECASE)
+    match = re.search(r"The\s+([A-Za-z'\s]+?)\s+wins", verdict_text, re.IGNORECASE)
     if match:
-        return match.group(1)
+        return normalize_winner_name(match.group(1).strip())
 
     # XXXXXX argument is strongest
-    match = re.search(r"(\w+)\s+argument\s+is\s+strongest", verdict_text, re.IGNORECASE)
+    match = re.search(
+        r"([A-Za-z'\s]+?)\s+argument\s+is\s+strongest", verdict_text, re.IGNORECASE
+    )
     if match:
-        return match.group(1)
+        return normalize_winner_name(match.group(1).strip())
 
     return "Unknown"
 
@@ -118,7 +161,7 @@ def plot_controllability_heatmap(all_results, output_dir):
         data.append(row)
 
     df = pd.DataFrame(data, index=dilemma_labels)
-    fig, ax = plt.subplots(figsize=(12, max(4, len(all_results) * 0.8)))
+    fig, ax = plt.subplots(figsize=(32, max(4, len(all_results) * 0.8)))
 
     sns.heatmap(
         df.T,
@@ -160,6 +203,9 @@ def plot_metrics_comparison(all_results, output_dir):
 
     for result in all_results:
         for persona_name, opinion in result["opinions"].items():
+            # skip Synthesizer - it's not supposed to be rated by the Judge
+            if persona_name == "Synthesizer":
+                continue
             analysis = analyze_persona_response(persona_name, opinion)
             if persona_name not in persona_ctrl_scores:
                 persona_ctrl_scores[persona_name] = []
@@ -256,10 +302,12 @@ def plot_response_lengths(all_results, output_dir):
 
     """
 
-    # collect word counts
+    # collect word counts (skip Synthesizer - not a competitor)
     data = []
     for result in all_results:
         for persona_name, opinion in result["opinions"].items():
+            if persona_name == "Synthesizer":
+                continue
             word_count = len(opinion.split())
             data.append({"Persona": persona_name, "Word Count": word_count})
 
