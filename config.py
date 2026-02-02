@@ -128,7 +128,7 @@ TEST_DILEMMAS = [
 # DYNAMIC DILEMMA LOADING (Social Chemistry 101)
 # =============================================================================
 
-NUM_ADDITIONAL_DILEMMAS = 30
+NUM_ADDITIONAL_DILEMMAS = 3
 
 DILEMMA_SEED = None
 

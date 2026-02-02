@@ -95,14 +95,11 @@ def get_random_dilemmas(
         rot = row["rot"]
 
         # creating a concise title from situation and
-        # trying to extract the core action/issue
+        # using the first sentence as the title
         title = situation.split(".")[0].strip()
-        if len(title) > 60:
-            # shortening and adding ellipsis
-            title = title[:57] + "..."
-        elif len(title) < 20:
+        if len(title) < 20:
             # too short, use more of the situation
-            title = situation[:60] + "..." if len(situation) > 60 else situation
+            title = situation
 
         title = title[0].upper() + title[1:] if title else "Ethical Dilemma"
 

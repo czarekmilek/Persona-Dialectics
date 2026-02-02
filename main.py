@@ -198,6 +198,7 @@ REMEMBER: The Synthesizer is your advisor, NOT a contestant."""
             {
                 "dilemma_id": dilemma["id"],
                 "dilemma_title": dilemma["title"],
+                "dilemma_description": dilemma["description"],
                 "opinions": opinions,
                 "judge_verdict": judge_verdict,
                 "llm_ratings": llm_ratings,
@@ -252,8 +253,13 @@ def save_results(results, output_dir=None):
         f.write("=" * 60 + "\n\n")
 
         for result in results:
+            # full title (not truncated)
             f.write(f"DILEMMA {result['dilemma_id']}: {result['dilemma_title']}\n")
-            f.write("-" * 40 + "\n\n")
+            f.write("-" * 40 + "\n")
+            # + full description
+            if result.get("dilemma_description"):
+                f.write(f"\n{result['dilemma_description']}\n")
+            f.write("\n")
 
             for persona, opinion in result["opinions"].items():
                 f.write(f"{persona}:\n{opinion}\n\n")
@@ -267,6 +273,54 @@ def save_results(results, output_dir=None):
                 f.write("\n")
 
             f.write("=" * 60 + "\n\n")
+
+        # =====================================================================
+        # SUMMARY SECTION
+        # =====================================================================
+        f.write("\n")
+        f.write("=" * 60 + "\n")
+        f.write("  FINAL SUMMARY\n")
+        f.write("=" * 60 + "\n\n")
+
+        f.write(f"Total dilemmas processed: {len(results)}\n")
+        f.write(f"Personas used: {', '.join(PERSONAS.keys())}, Synthesizer\n\n")
+
+        f.write("CONTROLLABILITY ANALYSIS (Keyword-based):\n")
+        f.write("-" * 40 + "\n")
+        persona_scores = {}
+        for result in results:
+            for persona_name, opinion in result["opinions"].items():
+                analysis = analyze_persona_response(persona_name, opinion)
+                if persona_name not in persona_scores:
+                    persona_scores[persona_name] = []
+                persona_scores[persona_name].append(analysis["score"])
+
+        for persona_name, scores in persona_scores.items():
+            if scores:
+                avg_score = sum(scores) / len(scores)
+                bar = "#" * int(avg_score * 20) + " " * (20 - int(avg_score * 20))
+                f.write(f"{persona_name:14} [{bar}] {avg_score:.2%}\n")
+
+        f.write("\nLLM AFFILIATION RATINGS (Judge-Rated):\n")
+        f.write("-" * 40 + "\n")
+        llm_persona_scores = {}
+        for result in results:
+            llm_ratings = result.get("llm_ratings", {})
+            for persona_name, rating in llm_ratings.items():
+                if persona_name not in llm_persona_scores:
+                    llm_persona_scores[persona_name] = []
+                llm_persona_scores[persona_name].append(rating)
+
+        if llm_persona_scores:
+            for persona_name, scores in llm_persona_scores.items():
+                if scores:
+                    avg_score = sum(scores) / len(scores)
+                    bar = "#" * int(avg_score * 2) + " " * (20 - int(avg_score * 2))
+                    f.write(f"{persona_name:14} [{bar}] {avg_score:.1f}/10\n")
+        else:
+            f.write("No LLM ratings found.\n")
+
+        f.write("\n" + "=" * 60 + "\n")
 
     print(f"\nResults saved to: {filename}")
 
