@@ -47,7 +47,7 @@ def normalize_winner_name(raw_name):
     return raw_name.title()
 
 
-def extract_winner(verdict_text):
+def extract_winner(verdict_text, llm_ratings=None):
     """
     Extract winner persona name from Judge's verdict.
 
@@ -56,32 +56,59 @@ def extract_winner(verdict_text):
     - "WINNER: Devil's Advocate"
     - "**Winner: Empath**"
     - "The Utilitarian wins"
+
+    If no winner is found falls back to the persona with the highest
+    LLM rating (if llm_ratings is provided).
+
+    Returns:
+        tuple: (winner_name: str, was_fallback: bool)
     """
     # WINNER: XXXXXX (capturing everything until newline or REASON)
     match = re.search(
         r"WINNER:\s*([A-Za-z'\s]+?)(?:\n|REASON|$)", verdict_text, re.IGNORECASE
     )
     if match:
-        return normalize_winner_name(match.group(1).strip())
+        winner = normalize_winner_name(match.group(1).strip())
+        if winner != "Unknown":
+            return (winner, False)
 
     # **Winner: XXXXXX**
     match = re.search(r"\*\*Winner:\s*([A-Za-z'\s]+?)\*\*", verdict_text, re.IGNORECASE)
     if match:
-        return normalize_winner_name(match.group(1).strip())
+        winner = normalize_winner_name(match.group(1).strip())
+        if winner != "Unknown":
+            return (winner, False)
 
     # The XXXXXX wins
     match = re.search(r"The\s+([A-Za-z'\s]+?)\s+wins", verdict_text, re.IGNORECASE)
     if match:
-        return normalize_winner_name(match.group(1).strip())
+        winner = normalize_winner_name(match.group(1).strip())
+        if winner != "Unknown":
+            return (winner, False)
 
     # XXXXXX argument is strongest
     match = re.search(
         r"([A-Za-z'\s]+?)\s+argument\s+is\s+strongest", verdict_text, re.IGNORECASE
     )
     if match:
-        return normalize_winner_name(match.group(1).strip())
+        winner = normalize_winner_name(match.group(1).strip())
+        if winner != "Unknown":
+            return (winner, False)
 
-    return "Unknown"
+    # FALLBACK: extract winner from highest rating if jusge didn't state it individualtly
+    if llm_ratings and isinstance(llm_ratings, dict) and len(llm_ratings) > 0:
+        # gilter out Synthesizer since its not a comptetitor
+        filtered_ratings = {
+            k: v for k, v in llm_ratings.items() if k.lower() not in EXCLUDED_WINNERS
+        }
+        if filtered_ratings:
+            best_persona = max(filtered_ratings, key=filtered_ratings.get)
+            best_score = filtered_ratings[best_persona]
+            # only use fallback if score is > 0
+            if best_score > 0:
+                return (normalize_winner_name(best_persona), True)
+
+    return ("Unknown", False)
 
 
 def plot_win_rates(all_results, output_dir):
@@ -95,9 +122,15 @@ def plot_win_rates(all_results, output_dir):
 
     # counting wins
     win_counts = {}
+    fallback_count = 0
     for result in all_results:
-        winner = extract_winner(result.get("judge_verdict", ""))
+        winner, was_fallback = extract_winner(
+            result.get("judge_verdict", ""), result.get("llm_ratings", {})
+        )
         win_counts[winner] = win_counts.get(winner, 0) + 1
+
+        if was_fallback:
+            fallback_count += 1
 
     if not win_counts or (len(win_counts) == 1 and "Unknown" in win_counts):
         print(
@@ -128,7 +161,11 @@ def plot_win_rates(all_results, output_dir):
 
     ax.set_xlabel("Persona", fontsize=12)
     ax.set_ylabel("Number of wins", fontsize=12)
-    ax.set_title("Wins distribution across dilemmas", fontsize=14, fontweight="bold")
+
+    title = "Wins distribution across dilemmas"
+    if fallback_count > 0:
+        title += f"\n(Fallbacks = {fallback_count})"
+    ax.set_title(title, fontsize=14, fontweight="bold")
     ax.set_ylim(0, max(wins) + 1)
 
     plt.tight_layout()

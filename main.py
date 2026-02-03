@@ -21,7 +21,7 @@ from analysis import (
     print_llm_affiliation_summary,
     print_sentiment_summary,
 )
-from visualization import generate_visual_report
+from visualization import generate_visual_report, extract_winner
 
 
 def parse_judge_ratings(verdict_text):
@@ -417,6 +417,30 @@ def save_results(results, output_dir=None, model_name=None):
                     f.write(f"{persona_name:14} [{bar}] {avg_score:.1f}/10\n")
         else:
             f.write("No LLM ratings found.\n")
+
+        f.write("\nWINNER DISTRIBUTION:\n")
+        f.write("-" * 40 + "\n")
+
+        win_counts = {}
+        fallback_count = 0
+        for result in results:
+            winner, was_fallback = extract_winner(
+                result.get("judge_verdict", ""), result.get("llm_ratings", {})
+            )
+            win_counts[winner] = win_counts.get(winner, 0) + 1
+            if was_fallback:
+                fallback_count += 1
+
+        for persona, wins in sorted(
+            win_counts.items(), key=lambda x: x[1], reverse=True
+        ):
+            bar = "#" * wins + " " * (20 - min(wins, 20))
+            f.write(f"{persona:14} [{bar[:20]}] {wins}\n")
+
+        if fallback_count > 0:
+            f.write(
+                f"\nFallback used for {fallback_count} cases - winner extracted from highest rating there\n"
+            )
 
         # =====================================================================
         # SENTIMENT ANALYSIS SECTION
