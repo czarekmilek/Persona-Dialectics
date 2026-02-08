@@ -209,3 +209,5 @@ __marimo__/
 
 /model_cache
 /results
+*.tsv
+social-chem-101/social-chem-101/social-chem-101.v1.0.tsv
