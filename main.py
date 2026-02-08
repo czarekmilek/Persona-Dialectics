@@ -26,8 +26,6 @@ from visualization import generate_visual_report, extract_winner
 
 def parse_judge_ratings(verdict_text):
     """
-    Parse affiliation ratings from Judge's structured output.
-
     Expected format:
     RATINGS:
     - Utilitarian: X/10
@@ -35,7 +33,7 @@ def parse_judge_ratings(verdict_text):
     ...
 
     Returns:
-        dict: {"Utilitarian": X, "Empath": X, ...} or empty dict if parsing fails
+        dict: {"Utilitarian": X, "Empath": X, ...}
     """
     ratings = {}
 
@@ -77,12 +75,6 @@ def print_subheader(text):
 
 
 def get_models_to_run():
-    """
-    Determine which models to run based on ACTIVE_MODELS config.
-
-    Returns:
-        list: List of (model_key, model_config) tuples
-    """
     if ACTIVE_MODELS is None or len(ACTIVE_MODELS) == 0:
         # run all models if not specified
         return list(AVAILABLE_MODELS.items())
@@ -98,17 +90,6 @@ def get_models_to_run():
 
 
 def run_pipeline_for_model(model_key, model_config, dilemmas):
-    """
-    Run the full dilemma pipeline for a single model.
-
-    Args:
-        model_key: Short model identifier (np. "3B")
-        model_config: Model configuration dict with 'id' and 'name'
-        dilemmas: List of dilemmas to process
-
-    Returns:
-        tuple: (all_results, output_dir)
-    """
     model_name = model_config["name"]
     model_id = model_config["id"]
 
@@ -201,7 +182,7 @@ Create a HYBRID solution that combines the best elements. Be decisive."""
         print_subheader("JUDGE'S EVALUATION")
 
         # build the judge's prompt with all opinions dynamically
-        # Synthesizer is NOT in opinions dict yet, so it won't be listed as a candidate
+        # Synthesizer isnt in opinions dict yet, so it won't be listed as a candidate
         opinions_text = "\n\n".join(
             [f"{name.upper()}: {opinions[name]}" for name in opinions.keys()]
         )
@@ -278,10 +259,6 @@ REMEMBER: The Synthesizer is your advisor, NOT a contestant."""
 
 
 def run_pipeline():
-    """
-    Runs dilemmas sequentially for each configured model.
-    """
-
     print(f"Started at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
 
     models_to_run = get_models_to_run()
@@ -305,7 +282,7 @@ def run_pipeline():
         f"\nLoaded {len(dilemmas)} dilemmas ({len(TEST_DILEMMAS)} base + {len(dilemmas) - len(TEST_DILEMMAS)} from Social Chemistry 101)"
     )
 
-    # Run pipeline for each model sequentially
+    # running pipeline for each model sequentially
     all_model_results = {}
 
     for i, (model_key, model_config) in enumerate(models_to_run, 1):
@@ -327,13 +304,6 @@ def run_pipeline():
 
 
 def save_results(results, output_dir=None, model_name=None):
-    """Save text results to file.
-
-    Args:
-        results: List of result dicts from pipeline
-        output_dir: Directory to save to. If None, creates a new timestamped dir.
-        model_name: Optional model name for report header
-    """
     if output_dir is None:
         os.makedirs("results", exist_ok=True)
         output_dir = "results"

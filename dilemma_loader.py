@@ -18,7 +18,7 @@ def load_social_chemistry_data():
         return _cached_df
 
     if not SOCIAL_CHEM_PATH.exists():
-        print(f"Warning: Social Chemistry 101 dataset not found at {SOCIAL_CHEM_PATH}")
+        print(f"Warning: Social Chemistry 101 dataset not fosund at {SOCIAL_CHEM_PATH}")
         return None
 
     print("Loading Social Chemistry 101 dataset...")
@@ -30,18 +30,6 @@ def load_social_chemistry_data():
 def get_random_dilemmas(
     num_dilemmas: int = 4, seed: int = None, categories: list = None
 ) -> list:
-    """
-    Get random dilemmas from Social Chemistry 101 dataset.
-
-    Args:
-        num_dilemmas: Number of dilemmas to return
-        seed: Random seed for reproducibility (None = random)
-        categories: List of categories to filter by (np. ['amitheasshole', 'confessions'])
-                   If None then all categories are used.
-
-    Returns:
-        List of dilemma dictionaries with id, title, description
-    """
     df = load_social_chemistry_data()
 
     if df is None:
@@ -125,25 +113,5 @@ def get_random_dilemmas(
 def get_all_dilemmas(
     base_dilemmas: list, num_additional: int = 4, seed: int = None
 ) -> list:
-    """
-    Combine base dilemmas with random ones from Social Chemistry 101.
-
-    Args:
-        base_dilemmas: List of base dilemmas from config
-        num_additional: Number of additional dilemmas to add
-        seed: Random seed for reproducibility
-
-    Returns:
-        Combined list of all dilemmas
-    """
     additional = get_random_dilemmas(num_dilemmas=num_additional, seed=seed)
     return base_dilemmas + additional
-
-
-# testing
-if __name__ == "__main__":
-    dilemmas = get_random_dilemmas(num_dilemmas=5, seed=42)
-    for d in dilemmas:
-        print(f"\n--- Dilemma {d['id']} ({d['category']}) ---")
-        print(f"Title: {d['title']}")
-        print(f"Description: {d['description']}")

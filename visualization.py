@@ -48,21 +48,6 @@ def normalize_winner_name(raw_name):
 
 
 def extract_winner(verdict_text, llm_ratings=None):
-    """
-    Extract winner persona name from Judge's verdict.
-
-    Looks for patterns like:
-    - "WINNER: Utilitarian"
-    - "WINNER: Devil's Advocate"
-    - "**Winner: Empath**"
-    - "The Utilitarian wins"
-
-    If no winner is found falls back to the persona with the highest
-    LLM rating (if llm_ratings is provided).
-
-    Returns:
-        tuple: (winner_name: str, was_fallback: bool)
-    """
     # WINNER: XXXXXX (capturing everything until newline or REASON)
     match = re.search(
         r"WINNER:\s*([A-Za-z'\s]+?)(?:\n|REASON|$)", verdict_text, re.IGNORECASE
@@ -97,7 +82,7 @@ def extract_winner(verdict_text, llm_ratings=None):
 
     # FALLBACK: extract winner from highest rating if jusge didn't state it individualtly
     if llm_ratings and isinstance(llm_ratings, dict) and len(llm_ratings) > 0:
-        # gilter out Synthesizer since its not a comptetitor
+        # Synthesizer is not comptetitor
         filtered_ratings = {
             k: v for k, v in llm_ratings.items() if k.lower() not in EXCLUDED_WINNERS
         }
@@ -112,15 +97,6 @@ def extract_winner(verdict_text, llm_ratings=None):
 
 
 def plot_win_rates(all_results, output_dir):
-    """
-    Creates a bar chart showing how many times each persosna won.
-
-    Args:
-        all_results: List of result dicts from pipeline
-        output_dir: Directory to save the chart
-    """
-
-    # counting wins
     win_counts = {}
     fallback_count = 0
     for result in all_results:
@@ -146,8 +122,6 @@ def plot_win_rates(all_results, output_dir):
     colors = sns.color_palette("husl", len(personas))
 
     bars = ax.bar(personas, wins, color=colors, edgecolor="black", linewidth=1.2)
-
-    # value labels on bars
     for bar, win in zip(bars, wins):
         ax.text(
             bar.get_x() + bar.get_width() / 2,
@@ -176,14 +150,6 @@ def plot_win_rates(all_results, output_dir):
 
 
 def plot_controllability_heatmap(all_results, output_dir):
-    """
-    Creates a heatmap showing controllability scores per persona per dilemma.
-
-    Args:
-        all_results: List of result dicts from pipeline
-        output_dir: Directory to save the chart
-    """
-    # data matrix
     data = []
     dilemma_labels = []
 
@@ -228,19 +194,12 @@ def plot_controllability_heatmap(all_results, output_dir):
 
 
 def plot_metrics_comparison(all_results, output_dir):
-    """
-    Creates a grouped bar chart comparing avg controlability vs avg LLM rating.
-
-    Args:
-        all_results: List of result dicts from pipeline
-        output_dir: Directory to save the chart
-    """
     persona_ctrl_scores = {}
     persona_llm_scores = {}
 
     for result in all_results:
         for persona_name, opinion in result["opinions"].items():
-            # skip Synthesizer - it's not supposed to be rated by the Judge
+            # skip Synthesizer - not supposed to be rated
             if persona_name == "Synthesizer":
                 continue
             analysis = analyze_persona_response(persona_name, opinion)
@@ -254,7 +213,6 @@ def plot_metrics_comparison(all_results, output_dir):
                 persona_llm_scores[persona_name] = []
             persona_llm_scores[persona_name].append(rating)
 
-    # computing averages
     personas = list(persona_ctrl_scores.keys())
     avg_ctrl = [
         sum(persona_ctrl_scores[p]) / len(persona_ctrl_scores[p]) for p in personas
@@ -268,7 +226,6 @@ def plot_metrics_comparison(all_results, output_dir):
         else:
             avg_llm.append(0)
 
-    # creating grouped bar chart
     x = range(len(personas))
     width = 0.35
 
@@ -291,7 +248,6 @@ def plot_metrics_comparison(all_results, output_dir):
         edgecolor="black",
     )
 
-    # adding value labels
     for bar in bars1:
         ax.text(
             bar.get_x() + bar.get_width() / 2,
@@ -330,16 +286,6 @@ def plot_metrics_comparison(all_results, output_dir):
 
 
 def plot_response_lengths(all_results, output_dir):
-    """
-    Creates a box plot showing response length distribution per persona.
-
-    Args:
-        all_results: List of result dicts from pipeline
-        output_dir: Directory to save the chart
-
-    """
-
-    # collect word counts (skip Synthesizer - not a competitor)
     data = []
     for result in all_results:
         for persona_name, opinion in result["opinions"].items():
@@ -376,17 +322,7 @@ def plot_response_lengths(all_results, output_dir):
 
 
 def generate_visual_report(all_results, base_output_dir="results", model_key=None):
-    """
-    Generates all visualizations.
 
-    Args:
-        all_results: List of result dicts from the pipeline
-        base_output_dir: Base directory for output (default: `results`)
-        model_key: Optional model identifier (e.g., "3B") for folder naming
-
-    Returns:
-        str: Path to the output directory containing all files
-    """
     # create timestamped output directory with optional model key
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     if model_key:

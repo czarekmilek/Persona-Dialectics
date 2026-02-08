@@ -1,2 +1,3 @@
 # Persona-Dialectics
-Archetype Conflict &amp; Synthesis in Multi-Agent Decision Support System
+
+Social Chemistry 101 Dataset: https://github.com/mbforbes/social-chemistry-101

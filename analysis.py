@@ -159,7 +159,7 @@ PERSONA_KEYWORDS = {
     ],
 }
 
-# words specific personas should AVOID (using them reduces score)
+# words specific personas should avoid !(using them reduces score)
 PERSONA_FORBIDDEN = {
     "Utilitarian": [
         "feel",
@@ -234,17 +234,7 @@ PERSONA_FORBIDDEN = {
 
 def analyze_persona_response(persona_name, response):
     """
-    Analyze how well a response matches its intended persona.
-
-    Args:
-        persona_name: Name of persona
-        response: Text response from model
-
-    Returns:
-        dict with:
-            - score: 0.0 to 1.0 (how well they matched)
-            - keywords_found: list of matching keywords
-            - total_keywords: how many keywords we looked for
+    Analyzes how well a response matches its intended persona.
     """
     # get keywords for this persona
     keywords = PERSONA_KEYWORDS.get(persona_name, [])
@@ -292,12 +282,6 @@ def analyze_sentiment(response):
 
 
 def print_analysis_summary(all_results):
-    """
-    Prints a summary of controllability scores for all responses.
-
-    Args:
-        all_results: List of result dictionaries from main pipeline
-    """
     print("\n" + "=" * 60)
     print("  CONTROLLABILITY ANALYSIS")
     print("=" * 60)
@@ -322,12 +306,6 @@ def print_analysis_summary(all_results):
 
 
 def print_llm_affiliation_summary(all_results):
-    """
-    Prints a summary of LLM-rated affiliation scores for all personas.
-
-    Args:
-        all_results: List of result dictionaries from main pipeline
-    """
     print("\n" + "=" * 60)
     print("  LLM AFFILIATION RATINGS (Judge-Rated)")
     print("=" * 60)
@@ -356,12 +334,6 @@ def print_llm_affiliation_summary(all_results):
 
 
 def print_sentiment_summary(all_results):
-    """
-    Prints a summary of sentiment analysis (polarity and subjectivity) for all personas.
-
-    Args:
-        all_results: List of result dictionaries from main pipeline
-    """
     print("\n" + "=" * 60)
     print("  SENTIMENT ANALYSIS (TextBlob)")
     print("=" * 60)
@@ -399,13 +371,3 @@ def print_sentiment_summary(all_results):
         )
         bar = "#" * int(avg_subjectivity * 20) + " " * (20 - int(avg_subjectivity * 20))
         print(f"{persona_name:14} [{bar}] {avg_subjectivity:.2f}")
-
-
-if __name__ == "__main__":
-    test_response = "I believe we should maximize the outcome and calculate the greatest benefit for all."
-    result = analyze_persona_response("Utilitarian", test_response)
-    print(f"Test analysis: {result}")
-
-    # test sentiment analysis
-    sentiment = analyze_sentiment(test_response)
-    print(f"Test sentiment: {sentiment}")
